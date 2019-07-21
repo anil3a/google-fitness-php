@@ -1,0 +1,10 @@
+{
+    "name": "Google Fitness Steps",
+    "description": "Personal Google Fitness Project to fetch steps of user after authenticating",
+    "type": "project",
+    "authors": [ { "name" : "Anil Prajapati" } ],
+	"homepage": "https://anil3a.github.io/",
+    "require": {
+        "google/apiclient": "^2.2"
+    }
+}
