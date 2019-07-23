@@ -3,10 +3,10 @@
 Get Google Fitness Steps with Google Fitness of Google API PHP Client
 
 
-# Google Console Access/Enable Requirements
+# Google API Library Requirements
 
-1. Google Fitness API
-2. Google Plus API
+1. Google Fitness API ( User Steps )
+2. Google Plus API ( Basic Profile for profile image, email and name )
 
 
 # Basic Requirements
