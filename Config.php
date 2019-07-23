@@ -8,6 +8,8 @@ Class Config
     private $clientId;
     private $redirectUrl;
     private $applicationName;
+    private $googleFitnessAggregateDataTypeName;
+    private $googleUserId;
 
     public function getSecretKey()
     {
@@ -47,5 +49,25 @@ Class Config
     public function setApplicationName( String $name )
     {
         $this->applicationName = $name;
+    }
+
+    public function getGoogleFitnessAggregateDataTypeName()
+    {
+        return "com.google.step_count.delta";
+    }
+
+    public function setGoogleFitnessAggregateDataTypeName( String $dataTypeName )
+    {
+        $this->googleFitnessAggregateDataTypeName = $dataTypeName;
+    }
+
+    public function getGoogleUserId()
+    {
+        return "me";
+    }
+
+    public function setGoogleUserId( String $googleUserId )
+    {
+        $this->googleUserId = $googleUserId;
     }
 }
