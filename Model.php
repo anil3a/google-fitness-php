@@ -3,6 +3,7 @@ namespace anlprz;
 
 use anlprz\Config;
 use Google_Client;
+use anlprz\Helper;
 
 // Replace acting $db Object to Database Connection
 
@@ -104,11 +105,11 @@ Class Model extends Config {
     {
         $db = new stdClass();
         $fitnessData = $db->query(
-            "SELECT `field_fitness_id`,`field_user_stored_access_token_code`
+            "SELECT `field_user_id`,`field_user_access_token_code`
             FROM `table_users`
             WHERE `field_user_id` = ". $this->getUserId() .
             "AND `field_user_active` = 1
-            ORDER BY `field_fitness_id` desc"
+            ORDER BY `field_user_id` desc"
         );
         if( !empty( $fitnessData ) && is_array( $fitnessData ) )
         {
@@ -120,13 +121,15 @@ Class Model extends Config {
         return $this;
     }
 
-    public function updateUserAccessToken( Integer $field_fitness_id, String $field_user_stored_access_token_code )
+    public function updateUserAccessToken( String $field_user_stored_access_token_code )
     {
+        if( empty( $this->getUserId() ) ) throw new \Exception( "User ID must be set before storing Access token of user" );
+
         $db = new \stdClass();
         return $db->query(
             "UPDATE `table_users`
-            SET `field_user_stored_access_token_code` = \"". $field_user_stored_access_token_code ."\""
-            ."WHERE `field_fitness_id` = ". $field_fitness_id
+            SET `field_user_access_token_code` = \"". $field_user_stored_access_token_code ."\""
+            ."WHERE `field_user_id` = ". $this->getUserId()
         );
     }
 
@@ -140,11 +143,11 @@ Class Model extends Config {
             $this->initUserFitnessData();
             $fitnessData = $this->getFitnessData();
         }
-        if ( empty( $fitnessData['access_token'] ) ) return $client;
+        if ( empty( $fitnessData['field_user_access_token_code'] ) ) return $client;
 
-        $accessToken = json_decode( $fitnessData['access_token'], true );
+        $accessToken = json_decode( $fitnessData['field_user_access_token_code'], true );
 
-        if( !is_array( $accessToken ) || empty( $accessToken['access_token'] ) )
+        if( empty( $accessToken['field_user_access_token_code'] ) || !is_array( $accessToken ) )
         {
             return $client;
         }
@@ -157,7 +160,7 @@ Class Model extends Config {
             {
                 try {
                     $client->fetchAccessTokenWithRefreshToken( $v );
-                    $this->updateUserAccessToken( $fitnessData['id_fitness'], json_encode( $client->getAccessToken() ) );
+                    $this->updateUserAccessToken( $fitnessData['field_user_id'], json_encode( $client->getAccessToken() ) );
                 } catch ( \Exception $e ) {
                     throw new \Exception( $e->getMessage() );
                 }
@@ -178,11 +181,11 @@ Class Model extends Config {
             $fitnessData = $this->getFitnessData();
         }
 
-        if ( empty( $fitnessData['access_token'] ) ) return $client;
+        if ( empty( $fitnessData['field_user_access_token_code'] ) ) return $client;
 
-        $accessToken = json_decode( $fitnessData['access_token'], true );
+        $accessToken = json_decode( $fitnessData['field_user_access_token_code'], true );
 
-        if( !is_array( $accessToken ) || empty( $accessToken['access_token'] ) )
+        if( empty( $accessToken['field_user_access_token_code'] ) || !is_array( $accessToken ) )
         {
             return false;
         }
@@ -207,7 +210,7 @@ Class Model extends Config {
         } else {
             $accessToken = '';
         }
-        $this->updateUserAccessToken( $this->getUserId(), $accessToken );
+        $this->updateUserAccessToken( $accessToken );
         return $this;
     }
 
@@ -221,4 +224,57 @@ Class Model extends Config {
         }
         return $this;
     }
+
+    public function saveUserAccessToken( String $accessToken = '' )
+    {
+        if( empty( $this->getUserId() ) ) throw new \Exception( "User ID must be set before storing Access token of user" );
+
+        $user = [
+            'field_user_id' => $this->getUserId(),
+            'field_user_active' => 1,
+        ];
+        if( !empty( $accessToken ) )
+        {
+            $access_token = json_encode( $accessToken );
+        } else {
+            $accessToken = '';
+        }
+
+        try {
+
+            $db = new \stdClass();
+            $helper = new Helper();
+
+            $query = 'SELECT * FROM `table_users` WHERE ';
+            $query .= implode( 
+                " AND ",
+                $helper->array_map_assoc( 
+                    function( $k, $v ) {
+                        return $k ." = ". $v;
+                    },
+                    $user
+                 )
+            );
+            $query .= ' order by `field_user_id` desc limit 1';
+
+            $userResult = $db->query( $query );
+
+            $user['field_user_access_token_code'] = $accessToken;
+
+            // TODO to check if user exist 
+
+            // Exist = Update
+
+            // Not Exist = Insert 
+
+            
+            return $this;
+
+        } catch ( \Exception $e ) {
+            throw new \Exception( $e->getMessage() );
+        }
+
+        return false;
+    }
+
 }
