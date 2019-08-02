@@ -16,7 +16,7 @@ Class Helper
     /**
      * Safe Json Encoder
      *
-     * @param Array|Object $value
+     * @param ANY $value
      * @param integer $options
      * @param integer $depth
      * @param boolean $utfErrorFlag
