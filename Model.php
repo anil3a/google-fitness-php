@@ -4,8 +4,7 @@ namespace anlprz;
 use anlprz\Config;
 use Google_Client;
 use anlprz\Helper;
-
-// Replace acting $db Object to Database Connection
+use anlprz\Database;
 
 Class Model extends Config {
 
@@ -13,12 +12,14 @@ Class Model extends Config {
     private $userId;
     private $fitnessData = [];
     private $autoLoad = true;
+    private $helperClass;
 
     public function __construct()
     {
         $this->includeVendor( 
             ( $this->getAutoload() )
         );
+        $this->helperClass = new Helper();
     }
 
     public function includeVendor( Bool $autoload = true )
@@ -103,7 +104,7 @@ Class Model extends Config {
 
     public function initUserFitnessData()
     {
-        $db = new stdClass();
+        $db = new Database();
         $fitnessData = $db->query(
             "SELECT `field_user_id`,`field_user_access_token_code`
             FROM `table_users`
@@ -125,7 +126,7 @@ Class Model extends Config {
     {
         if( empty( $this->getUserId() ) ) throw new \Exception( "User ID must be set before storing Access token of user" );
 
-        $db = new \stdClass();
+        $db = new Database();
         return $db->query(
             "UPDATE `table_users`
             SET `field_user_access_token_code` = \"". $field_user_stored_access_token_code ."\""
@@ -160,7 +161,7 @@ Class Model extends Config {
             {
                 try {
                     $client->fetchAccessTokenWithRefreshToken( $v );
-                    $this->updateUserAccessToken( $fitnessData['field_user_id'], json_encode( $client->getAccessToken() ) );
+                    $this->updateUserAccessToken( $fitnessData['field_user_id'], $this->helperClass->safe_json_encode( $client->getAccessToken() ) );
                 } catch ( \Exception $e ) {
                     throw new \Exception( $e->getMessage() );
                 }
@@ -206,7 +207,7 @@ Class Model extends Config {
         $accessToken = $client->fetchAccessTokenWithAuthCode( $code );
         if( !empty( $accessToken ) )
         {
-            $accessToken = json_encode( $accessToken );
+            $accessToken = $this->helperClass->safe_json_encode( $accessToken );
         } else {
             $accessToken = '';
         }
@@ -235,14 +236,17 @@ Class Model extends Config {
         ];
         if( !empty( $accessToken ) )
         {
-            $access_token = json_encode( $accessToken );
+            $accessToken = $this->helperClass->safe_json_encode( $accessToken );
+            if( empty( $accessToken['access_token'] ) || empty( $accessToken['expires_in'] ) )
+            {
+                throw new \Exception( "Invalid Access Token, Please verify this response: ". $accessToken );
+            }
         } else {
             $accessToken = '';
         }
 
         try {
-
-            $db = new \stdClass();
+            $db = new Database();
             $helper = new Helper();
 
             $query = 'SELECT * FROM `table_users` WHERE ';
@@ -255,7 +259,7 @@ Class Model extends Config {
                     $user
                  )
             );
-            $query .= ' order by `field_user_id` desc limit 1';
+            $query .= ' ORDER BY `field_user_id` DESC LIMIT 1';
 
             $userResult = $db->query( $query );
 
@@ -266,6 +270,26 @@ Class Model extends Config {
             // Exist = Update
 
             // Not Exist = Insert 
+
+
+            $user['field_user_access_token_code'] = $accessToken;
+
+            if( empty( $userResult['id_fitness'] ) )
+            {
+                $result['data']['result'] = $this->db->insert( "mdlgoogle_fitness_users", $user );
+                $result['data']['id'] = $this->db->insert_id();
+                $result['data']['query'] = "insert";
+            }
+            else {
+                $result['data']['result'] = $this->db->update(
+                                                "mdlgoogle_fitness_users",
+                                                [ 'field_user_access_token' => $accessToken ],
+                                                [ 'id_fitness' => $userResult['id_fitness'] ]
+                );
+
+                $result['data']['id']     = $userResult['id_fitness'];
+                $result['data']['query'] = "insert";
+            }
 
             
             return $this;
