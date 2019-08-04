@@ -1,5 +1,6 @@
 <?php
 namespace anlprz;
+use anlprz\Helper;
 
 Class Database
 {
@@ -7,6 +8,14 @@ Class Database
     private $databaseName;
     private $databasePassword;
     private $databaseHost;
+
+    private $qselect;
+    private $qfrom;
+    private $qwhere;
+    private $qorder = '';
+    private $qlimit = '';
+    private $qgroup = '';
+    private $last_query = '';
 
     public function setDatabaseUser( String $databaseUser )
     {
@@ -67,9 +76,103 @@ Class Database
         ';
     }
 
+    /**
+     * Query to Database
+     *
+     * @param String $q
+     * @return Array Table/s Result
+     */
     public function query( String $q )
     {
+        $q = $q;
+    }
 
+    public function select( String $select = "*" )
+    {
+        $this->qselect = $select;
+        return $this;
+    }
+
+    public function from( String $from )
+    {
+        $this->qfrom = $from;
+        return $this;
+    }
+
+    public function where( Array $where )
+    {
+        $this->qwhere = array_merge( $this->qwhere, $where );
+        return $this;
+    }
+
+    public function order( String $order )
+    {
+        $this->qorder = $order;
+        return $this;
+    }
+
+    public function group( String $group )
+    {
+        $this->qgroup = $group;
+        return $this;
+    }
+
+    public function limit( String $limit )
+    {
+        $this->qlimit = $limit;
+        return $this;
+    }
+
+    public function getResult()
+    {
+        $helper = new Helper;
+        if( empty( $this->qselect ) ){ $this->select(); }
+
+        $where = '';
+        if( !empty( $this->qwhere ) )
+        {
+            $where = ' WHERE '.  implode( 
+                " AND ",
+                $helper->array_map_assoc( 
+                    function( $k, $v ) {
+                        return $k ." = ". $v;
+                    },
+                    $this->qwhere
+                 )
+            );
+        }
+        $limit = ( !empty( $this->qlimit ) ? ' LIMIT '. $this->qlimit : '' );
+        $order = ( !empty( $this->qorder ) ? ' ORDER BY '. $this->qorder : '' );
+        $group = ( !empty( $this->qgroup ) ? ' GROUP BY '. $this->qgroup : '' );
+
+        $this->last_query = 
+            '
+                SELECT '. $this->qselect .' 
+                FROM '. $this->from .' 
+                '. $where .'
+                '. $group .'
+                '. $order .'
+                '. $limit .'                
+            '
+        ;
+        return $this->query( $this->last_query );
+    }
+
+    public function reset()
+    {
+        $this->qselect    = '';
+        $this->qfrom      = '';
+        $this->qwhere     = [];
+        $this->qorder     = '';
+        $this->qlimit     = '';
+        $this->qgroup     = '';
+        $this->last_query = '';
+        return true;
+    }
+
+    public function getLastQuery()
+    {
+        return $this->last_query;
     }
     
 }
