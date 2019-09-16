@@ -236,8 +236,8 @@ Class Model extends Config {
         ];
         if( !empty( $accessToken ) )
         {
-            $accessToken = $this->helperClass->safe_json_encode( $accessToken );
-            if( empty( $accessToken['access_token'] ) || empty( $accessToken['expires_in'] ) )
+            $accessTokenArray = json_decode( $accessToken );
+            if( empty( $accessTokenArray['access_token'] ) || empty( $accessTokenArray['expires_in'] ) )
             {
                 throw new \Exception( "Invalid Access Token, Please verify this response: ". $accessToken );
             }
@@ -249,8 +249,8 @@ Class Model extends Config {
             $db = new Database();
             $helper = new Helper();
 
-            $query = 'SELECT * FROM `table_users` WHERE ';
-            $query .= implode( 
+            $querySelect = 'SELECT * FROM `table_users` WHERE ';
+            $where = implode( 
                 " AND ",
                 $helper->array_map_assoc( 
                     function( $k, $v ) {
@@ -259,45 +259,23 @@ Class Model extends Config {
                     $user
                  )
             );
-            $query .= ' ORDER BY `field_user_id` DESC LIMIT 1';
+            $querySelect .= $where;
+            $querySelect .= ' ORDER BY `field_user_id` DESC LIMIT 1';
 
-            $userResult = $db->query( $query );
+            $userResult = $db->query( $querySelect );
 
-            $user['field_user_access_token_code'] = $accessToken;
-
-            // TODO to check if user exist 
-
-            // Exist = Update
-
-            // Not Exist = Insert 
-
-
-            $user['field_user_access_token_code'] = $accessToken;
-
-            if( empty( $userResult['id_fitness'] ) )
+            if( !empty( $userResult['field_user_id'] ) )
             {
-                $result['data']['result'] = $this->db->insert( "mdlgoogle_fitness_users", $user );
-                $result['data']['id'] = $this->db->insert_id();
-                $result['data']['query'] = "insert";
+                $queryUpdate = 'UPDATE `table_users` SET `field_user_access_token_code`=\''. $accessToken .'\' WHERE '. $where;
+                $db->query( $queryUpdate );
+            } else {
+                throw new \Exception( "User must been deactivated. Please activate the user to be able to update Access token" );
             }
-            else {
-                $result['data']['result'] = $this->db->update(
-                                                "mdlgoogle_fitness_users",
-                                                [ 'field_user_access_token' => $accessToken ],
-                                                [ 'id_fitness' => $userResult['id_fitness'] ]
-                );
-
-                $result['data']['id']     = $userResult['id_fitness'];
-                $result['data']['query'] = "insert";
-            }
-
-            
             return $this;
 
         } catch ( \Exception $e ) {
             throw new \Exception( $e->getMessage() );
         }
-
         return false;
     }
 
