@@ -85,6 +85,8 @@ Class Database
     public function query( String $q )
     {
         $q = $q;
+        // TODO: Create custom query to Database
+        // Also use escape(safe) queries 
     }
 
     public function select( String $select = "*" )
