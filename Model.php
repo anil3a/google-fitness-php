@@ -109,8 +109,8 @@ Class Model extends Config {
             "SELECT `field_user_id`,`field_user_access_token_code`
             FROM `table_users`
             WHERE `field_user_id` = ". $this->getUserId() .
-            "AND `field_user_active` = 1
-            ORDER BY `field_user_id` desc"
+            " AND `field_user_active` = 1
+            ORDER BY `field_user_id` DESC LIMIT 1"
         );
         if( !empty( $fitnessData ) && is_array( $fitnessData ) )
         {
@@ -215,7 +215,7 @@ Class Model extends Config {
         return $this;
     }
 
-    public function getFitnessAcess()
+    public function getFitnessAccess()
     {
         if( $this->isAuthenticated() )
         {
