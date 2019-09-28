@@ -3,7 +3,7 @@ namespace anlprz;
 
 Class Helper
 {
-    public function array_map_assoc( $callback , Array $array )
+    public static function array_map_assoc( $callback , Array $array )
     {
         $r = [];
         foreach( $array as $k => $v )
@@ -20,9 +20,9 @@ Class Helper
      * @param integer $options
      * @param integer $depth
      * @param boolean $utfErrorFlag
-     * @return void
+     * @return String|\Exception
      */
-    public function safe_json_encode( $value, INT $options = 0, INT $depth = 512, BOOL $utfErrorFlag = false )
+    public static function safe_json_encode( $value, INT $options = 0, INT $depth = 512, BOOL $utfErrorFlag = false )
     {
         $encoded = json_encode( $value, $options, $depth );
         switch ( json_last_error() )
@@ -38,29 +38,38 @@ Class Helper
             case JSON_ERROR_SYNTAX:
                 throw new \Exception( 'Syntax error, malformed JSON' );
             case JSON_ERROR_UTF8:
-                $clean = utf8ize( $value );
+                $clean = self::utf8ize( $value );
                 if( $utfErrorFlag )
                 {
                     throw new \Exception( 'UTF8 encoding error' );
                 }
-                return safe_json_encode( $clean, $options, $depth, true );
+                return self::safe_json_encode( $clean, $options, $depth, true );
             default:
                 throw new \Exception( 'Unknown error' );
         }
     }
 
-    public function utf8ize( $mixed )
+    public static function utf8ize( $mixed )
     {
         if( is_array( $mixed ) )
         {
             foreach( $mixed as $key => $value )
             {
-                $mixed[$key] = utf8ize( $value );
+                $mixed[$key] = self::utf8ize( $value );
             }
         } else if( is_string ( $mixed) )
         {
             return utf8_encode( $mixed );
         }
         return $mixed;
+    }
+
+    public static function dashesToCamelCase($string, $capitalizeFirstCharacter = false) 
+    {
+        $str = str_replace('_', '', ucwords($string, '_'));
+        if (!$capitalizeFirstCharacter) {
+            $str = lcfirst($str);
+        }
+        return $str;
     }
 }
