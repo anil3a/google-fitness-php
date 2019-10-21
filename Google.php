@@ -23,7 +23,8 @@ Class Google extends Core
 
         $user = new User( $email );
         $model = new Model();
-        $model->setUserId( $user->getId() );
+
+        $model->setUserId( $user->id );
 
         $result['data']['google_fitness_token'] = false;
         $result['data']['google_fitness_authurl'] = "";
@@ -47,7 +48,7 @@ Class Google extends Core
                 $fetch = true;
                 if( !empty( $userFitnessData['field_user_id'] ) )
                 {
-                    $result['data']['query'] = $fitnessModel->get_user_daily_steps(
+                    $result['data']['query'] = $fitnessModel->getUserDailySteps(
                         $userFitnessData['field_user_id'],
                         '`field_user_daily_id`,`steps`,`data`,`created_at`',
                         [
@@ -62,8 +63,8 @@ Class Google extends Core
                         {
                             $created_at = '';
                             try {
-                                $created_at = new DateTime( $result['data']['query'][0]['created_at'] );
-                                $now        = new DateTime();
+                                $created_at = new \DateTime( $result['data']['query'][0]['created_at'] );
+                                $now        = new \DateTime();
                                 $last_ran   = $now->getTimestamp() - $created_at->getTimestamp();
 
                                 // only every 5 mintues API is called to update your Today's Steps
@@ -83,15 +84,15 @@ Class Google extends Core
                 if( $fetch )
                 {
                     $anlDate = new Anlprz_Date( $todayDateTime );
-                    $response = $fitnessModel->fetch_fitness( $anlDate );
+                    $response = $fitnessModel->getGoogleFitness( $anlDate );
                     $result['data']['response'] = $response;
-                    $result['data']['steps_result'] = $fitnessModel->readable_aggregate_response( $response );
+                    $result['data']['steps_result'] = $fitnessModel->readableAggregateResponse( $response );
                     if( !empty( $result['data']['steps_result']['result'] ) && isset( $result['data']['steps_result']['result']['steps'] ) )
                     {
                         $result['data']['steps_today'] = (int) $result['data']['steps_result']['result']['steps'];
                     }
                     // save it to database
-                    $fitnessModel->save_to_fitnessdaily(
+                    $fitnessModel->saveFitnessDaily(
                         $response,
                         $userFitnessData['id_fitness'],
                         $todayDateTime->format("Y-m-d")
@@ -100,21 +101,57 @@ Class Google extends Core
             }
             $result['success'] = true;
         } catch ( Exception $e ) {
-            logActivity( "GoogleFitness: AUTH Error for UserID=". $user->getId() . " TRACE::". $e->getMessage() );
             $result['message'] = 'Please re-authenicate your access token again.';
         }
         return $this->return_result( $result );
     }
 
-    public function callBack()
+    public function callBack( String $email, Array $getGoogleRequest )
     {
         $result = [ 'success' => false, 'data' => [], 'message' => '' ];
+
+        $user = new User( $email );
+        $model = new Model();
+        $todayDateTime = new \Datetime();
+        $anlDate = new Anlprz_Date( $todayDateTime );
+        $model->setUserId( $user->getId() );
+
+        if( empty( $getGoogleRequest['code'] ) )
+        {
+            $result['message'] = 'Google Authentication Error. Please re-authenticate again.';
+            return $this->return_result( $result );
+        }
+        try {
+            $model->getFitnessAccess();
+            $result['data']['at'] = $model->setGoogleUserAuthentication( $getGoogleRequest['code'] );
+            $this->getFitnessStepsByDate( $user->getId(), $anlDate );
+            $result['success'] = true;
+        } catch ( Exception $e ) {
+            $result['message'] = 'Please re-authenicate your access token again. Error Traced: '. $e->getMessage();
+            $result['data']['post'] = $getGoogleRequest;
+        }
         return $this->return_result( $result );
     }
-    
-    public function removeAccessToken()
+
+    public function removeAccessToken( String $email )
     {
         $result = [ 'success' => false, 'data' => [], 'message' => '' ];
+
+        $user = new User( $email );
+        $model = new Model();
+        $model->setUserId( $user->getId() );
+
+        try {
+            $model->initUserFitnessData();
+            $fitnessData = $model->getFitnessData();
+            if( !empty( $fitnessData['field_user_access_token_code'] ) )
+            {
+                $model->saveUserAccessToken( '' );
+            }
+            $result['success'] = true;
+        } catch ( Exception $e ) {
+            $result['message'] = 'Error Traced: '. $e->getMessage();
+        }
         return $this->return_result( $result );
     }
 
