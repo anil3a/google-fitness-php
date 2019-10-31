@@ -124,7 +124,7 @@ Class Google extends Core
         try {
             $model->getFitnessAccess();
             $result['data']['at'] = $model->setGoogleUserAuthentication( $getGoogleRequest['code'] );
-            $this->getFitnessStepsByDate( $user->getId(), $anlDate );
+            $this->setFitnessDataAndUserInformation( $user->getId(), $anlDate );
             $result['success'] = true;
         } catch ( Exception $e ) {
             $result['message'] = 'Please re-authenicate your access token again. Error Traced: '. $e->getMessage();
@@ -154,5 +154,57 @@ Class Google extends Core
         }
         return $this->return_result( $result );
     }
+
+    // old getFitnessStepsByDate
+    public function setFitnessDataAndUserInformation( Int $userid, Anlprz_Date $dateTimeObj )
+    {
+        $model = new Model();
+        $model->setUserId( $userid );
+        $response = [];
+
+        $update_table_data = false;
+        $fitnessModel = new Fitness();
+
+        try {
+            $fitnessModel->saveFitnessUser( $fitnessModel->getPersonData(), $userid );
+            $fitnessDataModel = $model->initUserFitnessData();
+
+            $fitnessData = $fitnessDataModel->getFitnessData();
+
+            if( empty( $fitnessData ) )
+            {
+                throw new Exception( "User Id ". $userid ." not found in Google Fitness table. Exited" );
+            }
+
+            $existingStepDates = [];
+
+            if( !$update_table_data )
+            {
+                $user_dates = $fitnessModel->getUserDailySteps( $fitnessData['field_user_id'], "stepdate" );
+                if( !empty( $user_dates ) )
+                {
+                    foreach ( $user_dates as $d )
+                    {
+                        if( !empty( $d['stepdate'] ) )
+                        {
+                            $existingStepDates[ str_replace( "-", "", $d['stepdate'] ) ] = $d['stepdate'];
+                        }
+                    }
+                }
+            }
+            if( !empty( $existingStepDates ) && !empty( $existingStepDates[ $dateTimeObj->format( "Ymd" ) ] ) )
+            {
+
+            } else {
+                $response = $fitnessModel->getGoogleFitness( $dateTimeObj );
+                $fitnessModel->saveFitnessDaily( $response, $fitnessData['id_fitness'], $dateTimeObj->format( "Y-m-d" ) );
+            }
+
+        } catch ( Exception $e ) {
+            return $e->getMessage();
+        }
+        return true;
+    }
+
 
 }

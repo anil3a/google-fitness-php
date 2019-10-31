@@ -5,13 +5,18 @@ Class Anlprz_Date
 {
     private $startTimestampMillis;
     private $endTimestampMillis;
+    private $dateTime;
+    private $googleDateTime;
 
     public function __construct( \DateTime $dateObj )
     {
         try {
+            $this->dateTime = $dateObj;
             $this->reset();
             $dateObj->setTime( 0, 0, 0 );
             $dateObj->setTimezone( new \DateTimeZone('UTC') );
+
+            $this->googleDateTime = $dateObj;
 
             $dateTimeEnd = clone $dateObj;
 
@@ -53,6 +58,16 @@ Class Anlprz_Date
     protected function setEndTimeStampMillis( Int $endTimestampMillis )
     {
         $this->endTimestampMillis = $endTimestampMillis;
+    }
+
+    public function getDateTime()
+    {
+        return $this->dateTime;
+    }
+
+    public function getGoogleDateTime()
+    {
+        return $this->googleDateTime;
     }
 
     public function reset()
