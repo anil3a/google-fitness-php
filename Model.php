@@ -1,6 +1,8 @@
 <?php
 namespace anlprz;
 
+require_once 'Config.php';
+
 use anlprz\Config;
 use Google_Client;
 use anlprz\Helper;
@@ -12,14 +14,12 @@ Class Model extends Config {
     private $userId;
     private $fitnessData = [];
     private $autoLoad = true;
-    private $helperClass;
 
     public function __construct()
     {
         $this->includeVendor( 
             ( $this->getAutoload() )
         );
-        $this->helperClass = new Helper();
     }
 
     public function includeVendor( Bool $autoload = true )
@@ -63,7 +63,7 @@ Class Model extends Config {
         return $this->userId;
     }
 
-    public function setUserId( Integer $userId )
+    public function setUserId( Int $userId )
     {
         $this->userId = $userId;
         return $this;
@@ -122,18 +122,6 @@ Class Model extends Config {
         return $this;
     }
 
-    public function updateUserAccessToken( String $field_user_stored_access_token_code )
-    {
-        if( empty( $this->getUserId() ) ) throw new \Exception( "User ID must be set before storing Access token of user" );
-
-        $db = new Database();
-        return $db->query(
-            "UPDATE `table_users`
-            SET `field_user_access_token_code` = \"". $field_user_stored_access_token_code ."\""
-            ."WHERE `field_user_id` = ". $this->getUserId()
-        );
-    }
-
     public function initClientAssessed()
     {
         $client = $this->getClient();
@@ -161,7 +149,7 @@ Class Model extends Config {
             {
                 try {
                     $client->fetchAccessTokenWithRefreshToken( $v );
-                    $this->updateUserAccessToken( $fitnessData['field_user_id'], $this->helperClass->safe_json_encode( $client->getAccessToken() ) );
+                    $this->updateUserAccessToken( Helper::safe_json_encode( $client->getAccessToken() ) );
                 } catch ( \Exception $e ) {
                     throw new \Exception( $e->getMessage() );
                 }
@@ -207,11 +195,11 @@ Class Model extends Config {
         $accessToken = $client->fetchAccessTokenWithAuthCode( $code );
         if( !empty( $accessToken ) )
         {
-            $accessToken = $this->helperClass->safe_json_encode( $accessToken );
+            $accessToken = Helper::safe_json_encode( $accessToken );
         } else {
             $accessToken = '';
         }
-        $this->updateUserAccessToken( $accessToken );
+        $this->saveUserAccessToken( $accessToken );
         return $this;
     }
 
@@ -224,6 +212,18 @@ Class Model extends Config {
             $this->getClient();
         }
         return $this;
+    }
+
+    public function updateUserAccessToken( String $field_user_stored_access_token_code )
+    {
+        if( empty( $this->getUserId() ) ) throw new \Exception( "User ID must be set before storing Access token of user" );
+
+        $db = new Database();
+        return $db->query(
+            "UPDATE `table_users`
+            SET `field_user_access_token_code` = \"". $field_user_stored_access_token_code ."\""
+            ."WHERE `field_user_id` = ". $this->getUserId()
+        );
     }
 
     public function saveUserAccessToken( String $accessToken = '' )
@@ -247,12 +247,11 @@ Class Model extends Config {
 
         try {
             $db = new Database();
-            $helper = new Helper();
 
             $querySelect = 'SELECT * FROM `table_users` WHERE ';
             $where = implode( 
                 " AND ",
-                $helper->array_map_assoc( 
+                Helper::array_map_assoc(
                     function( $k, $v ) {
                         return $k ." = ". $v;
                     },
