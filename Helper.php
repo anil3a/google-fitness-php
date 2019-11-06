@@ -72,4 +72,13 @@ Class Helper
         }
         return $str;
     }
+
+    public static function recursive_mkdir_folder( $path )
+    {
+        if( !file_exists( $path ) )
+        {
+            mkdir( $path, 0777, true );
+            fopen( $path . 'index.html', 'w' );
+        }
+    }
 }
