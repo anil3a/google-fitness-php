@@ -97,6 +97,24 @@ Class Database
         ';
     }
 
+    public function schema_user_fitness()
+    {
+        return 'CREATE TABLE IF NOT EXISTS `table_user_fitness` (
+                `field_user_fitness_id` INT NOT NULL AUTO_INCREMENT,
+                `user_field_user_id` INT NOT NULL,
+                `steps` INT NOT NULL DEFAULT 0,
+                `data_source_id` VARCHAR(250) NULL DEFAULT NULL,
+                `start_time_millis` BIGINT NULL DEFAULT NULL,
+                `end_time_millis` BIGINT NULL DEFAULT NULL,
+                `stepdate` VARCHAR(10) NULL DEFAULT NULL,
+                `data` TEXT NULL DEFAULT NULL,
+                `field_created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `field_updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY ( `field_user_id` )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+        ';
+    }
+
     /**
      * Query to Database
      *
