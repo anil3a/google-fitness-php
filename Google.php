@@ -73,7 +73,7 @@ Class Google extends Core
                                     $fetch = true;
                                 }
 
-                            } catch ( Exception $e ) {
+                            } catch ( \Exception $e ) {
                                $fetch = true;
                             }
                         }
@@ -100,7 +100,7 @@ Class Google extends Core
                 }
             }
             $result['success'] = true;
-        } catch ( Exception $e ) {
+        } catch ( \Exception $e ) {
             $result['message'] = 'Please re-authenicate your access token again.';
         }
         return $this->return_result( $result );
@@ -126,7 +126,7 @@ Class Google extends Core
             $result['data']['at'] = $model->setGoogleUserAuthentication( $getGoogleRequest['code'] );
             $this->setFitnessDataAndUserInformation( $user->getId(), $anlDate );
             $result['success'] = true;
-        } catch ( Exception $e ) {
+        } catch ( \Exception $e ) {
             $result['message'] = 'Please re-authenicate your access token again. Error Traced: '. $e->getMessage();
             $result['data']['post'] = $getGoogleRequest;
         }
@@ -149,7 +149,7 @@ Class Google extends Core
                 $model->saveUserAccessToken( '' );
             }
             $result['success'] = true;
-        } catch ( Exception $e ) {
+        } catch ( \Exception $e ) {
             $result['message'] = 'Error Traced: '. $e->getMessage();
         }
         return $this->return_result( $result );
@@ -173,7 +173,7 @@ Class Google extends Core
 
             if( empty( $fitnessData ) )
             {
-                throw new Exception( "User Id ". $userid ." not found in Google Fitness table. Exited" );
+                throw new \Exception( "User Id ". $userid ." not found in Google Fitness table. Exited" );
             }
 
             $existingStepDates = [];
@@ -200,7 +200,7 @@ Class Google extends Core
                 $fitnessModel->saveFitnessDaily( $response, $fitnessData['id_fitness'], $dateTimeObj->format( "Y-m-d" ) );
             }
 
-        } catch ( Exception $e ) {
+        } catch ( \Exception $e ) {
             return $e->getMessage();
         }
         return true;

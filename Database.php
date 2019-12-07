@@ -270,6 +270,49 @@ Class Database
         return $this->query( $this->last_query );
     }
 
+    public function insert( $table, $data )
+    {
+        $q = 'INSERT INTO `'. $table .'` ';
+        $fields = [];
+        $values = [];
+        foreach( $data as $k => $v )
+        {
+            $fields[] = '`'. $k .'`';
+            $values[] = '"'. $v .'"';
+        }
+        $q .= '( '. implode( ',', $fields ) .' ) VALUES ';
+        $q .= '( '. implode( ',', $values ) .' )';
+        return $this->query( $q );
+    }
+
+    public function last_insert_id()
+    {
+        return $this->db->insert_id;
+    }
+
+    public function update( $table, $data, $whereData )
+    {
+        $set = implode(
+            ", ",
+            Helper::array_map_assoc(
+                function( $k, $v ) {
+                    return '`'. $k .'` = "'. $v .'"';
+                },
+                $data
+            )
+        );
+        $where = implode(
+            " AND ",
+            Helper::array_map_assoc(
+                function( $k, $v ) {
+                    return '`'. $k .'` = "'. $v .'"';
+                },
+                $whereData
+            )
+        );
+        return $this->query( 'UPDATE `'. $table .'` SET '. $set .' WHERE '. $where );
+    }
+
     public function resultRow()
     {
         if( !empty( $this->resultObject ) )
